@@ -34,6 +34,51 @@
 | 测试 | pytest + httpx（TestClient） |
 | 模型接入 | 任意 OpenAI 兼容接口（硅基流动、Ollama、vLLM、OpenAI 等） |
 
+## 🧭 架构
+
+```mermaid
+flowchart TB
+    subgraph CLIENT["客户端"]
+        UI["Gradio 前端"]
+        API["curl / 其他程序"]
+    end
+
+    subgraph GW["LLM-Gateway"]
+        AUTH["auth.py · 鉴权"]
+        RL["ratelimit.py · 限流"]
+        SCHEMA["schemas.py · 校验"]
+        TOK["tokens.py · token 裁剪"]
+        RT["_open_stream · 重试"]
+        FB["_open_stream_with_fallback · 降级"]
+        PROBE["probe.py · 启动探测"]
+        USAGE["usage.py · 计量"]
+    end
+
+    subgraph UP["上游（配置驱动，加后端不改代码）"]
+        U1["SiliconFlow · Qwen 32K · 免费"]
+        U2["DeepSeek 官方 · 1M · 计费"]
+        U3["本地 Ollama · 0.5B · 免费"]
+    end
+
+    CLIENT --> AUTH --> RL --> SCHEMA --> TOK --> RT
+    RT -->|首选| U1
+    RT -->|重试耗尽| FB
+    FB -->|备用 1| U2
+    FB -->|备用 2| U3
+    RT -.->|每次请求记 token| USAGE
+    PROBE -.->|启动时生成降级链| FB
+```
+
+三条线，各管一件事：
+
+| 线 | 做什么 | 代码 |
+|---|---|---|
+| **主路径** | 请求过 8 道关，最后落到一个上游 | `fastapi_bot.py · chat()` |
+| **降级线** | 首选挂了按链换，链由启动探测生成 | `probe.py` + `_open_stream_with_fallback` |
+| **旁路线** | 计量不阻塞请求，探测不阻塞启动 | `usage.py` + `probe.py` |
+
+> 8 道关的逐关细节（触发条件 / 返回什么 / 踩过的坑）见 [docs/请求旅程.md](docs/请求旅程.md)。
+
 ## 🏗 请求链路
 
 ```
