@@ -1,7 +1,26 @@
-# 本地调用api大模型多轮对话机器人
+# LLM-Gateway
 
-> 一个前后端分离的流式对话 Web 应用：FastAPI 后端对接 OpenAI 兼容的大模型 API（硅基流动 / Ollama / vLLM 均可），Gradio 前端提供聊天交互与参数调节面板。
+> 把不可靠的模型上游，变成可用的服务。
+> **多后端切换 · 自动降级 · 滑动窗口限流 · token 计量与裁剪 · SSE 流式**
 
+[![tests](https://github.com/white20051028/LLM-Gateway/actions/workflows/test.yml/badge.svg)](https://github.com/white20051028/LLM-Gateway/actions/workflows/test.yml)
+![python](https://img.shields.io/badge/python-3.11-blue)
+
+**一个请求要过 8 道关**：鉴权 → 限流 → 校验 → 选后端 → token 裁剪 → 重试 → 降级 → 如实报告。
+
+| 能力 | 一句话 |
+|---|---|
+| **多后端** | 4 个后端（硅基流动 / DeepSeek 官方 / 本地 Ollama），配置文件驱动，加后端不用改代码 |
+| **自动降级** | 启动时探测每个后端能不能出字，主后端挂了自动切换——实测 **1.6 秒**恢复出字 |
+| **限流** | 按 key 滑动窗口，超限 `429` + `Retry-After` |
+| **计量** | 每次请求记 token 用量，`/usage` 聚合查看 |
+| **裁剪** | 按模型窗口 70% 做预算，丢最旧的历史；system 和本轮问题永不裁 |
+| **流式** | SSE 支持 `event: error`，断流时告诉客户端断在哪、为什么 |
+| **测试** | **46 条，全部不联网**，CI 用假 key 复跑来守着这条线 |
+
+> 设计取舍见 [docs/请求旅程.md](docs/请求旅程.md) ｜ 踩过的坑见 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) ｜ 进度见 [docs/PROGRESS.md](docs/PROGRESS.md)
+
+---
 ## ✨ 功能特性
 
 - **流式逐字输出**：基于 LangChain 原生 `astream()`，打字机效果实时渲染
