@@ -21,18 +21,6 @@
 > 设计取舍见 [docs/请求旅程.md](docs/请求旅程.md) ｜ 踩过的坑见 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) ｜ 进度见 [docs/PROGRESS.md](docs/PROGRESS.md)
 
 ---
-## ✨ 功能特性
-
-- **流式逐字输出**：基于 LangChain 原生 `astream()`，打字机效果实时渲染
-- **多轮上下文记忆**：可调节保留的历史对话轮数，自动裁剪超长上下文
-- **参数可视化调节**：温度、top_p、max_tokens、系统提示词全部支持滑块实时调整
-- **前后端分离**：FastAPI 提供流式接口，Gradio 作为前端，可独立替换/扩展
-- **接口鉴权**：`/chat` 必须携带 `X-API-Key` 请求头，未配置密钥时拒绝全部请求（fail closed）
-- **请求体校验**：Pydantic 模型定义全部字段与上下界，非法请求返回 422 并指出具体字段
-- **消息正文双格式兼容**：`content` 既可以是字符串，也可以是 `[{"type": "text", "text": "..."}]` 内容块数组——后者是 Gradio 6 的默认形态，也是 OpenAI chat API 支持的写法
-- **配置与代码分离**：API Key、模型、地址全部通过 `.env` 管理，代码零敏感信息
-- **自动化测试**：pytest 覆盖鉴权、校验、历史裁剪共 18 个用例，不联网、不花钱
-- **CORS 跨域支持**：前后端分离部署无跨域问题
 
 ## 🛠 技术栈
 
